@@ -29,13 +29,13 @@ GEN_C_OUT = 64 #72
 KEEP_PROB = 0.8
 
 
-select = 'wifi' # {'hhar', 'wifi'}
+select = 'hhar' # {'hhar', 'wifi'}
 if len(sys.argv) > 1:
 	select = sys.argv[1]
 if select != 'wifi' and select != 'hhar':
-	print 'select wifi or hhar'
+	print('select wifi or hhar')
 	sys.exit("select wifi or hhar")
-print 'select', select
+print('select', select)
 
 if select == 'wifi':
 	SERIES_SIZE = 512
@@ -48,27 +48,27 @@ if select == 'hhar':
 	SENSOR_NUM = 2
 	OUT_DIM = 6
 
-print 'GEN_FFT_N', GEN_FFT_N
-print 'GEN_FFT_N2', GEN_FFT_N2
-print 'FILTER_LEN', FILTER_LEN
-print 'DILATION_LEN', DILATION_LEN
-print 'KEEP_PROB', KEEP_PROB
-print 'GEN_C_OUT', GEN_C_OUT
+print('GEN_FFT_N', GEN_FFT_N)
+print('GEN_FFT_N2', GEN_FFT_N2)
+print('FILTER_LEN', FILTER_LEN)
+print('DILATION_LEN', DILATION_LEN)
+print('KEEP_PROB', KEEP_PROB)
+print('GEN_C_OUT', GEN_C_OUT)
 
 FILTER_EXP_SEL = 'linear_interp' #{linear_interp', 'time_zeropadding'}
-print 'FILTER_EXP_SEL', FILTER_EXP_SEL
+print('FILTER_EXP_SEL', FILTER_EXP_SEL)
 
 FILTER_INIT = 'real' #{'real', 'complex'}
-print 'FILTER_INIT', FILTER_INIT
+print('FILTER_INIT', FILTER_INIT)
 
 GLOBAL_KERNEL_SIZE = 32
-print 'GLOBAL_KERNEL_SIZE', GLOBAL_KERNEL_SIZE
+print('GLOBAL_KERNEL_SIZE', GLOBAL_KERNEL_SIZE)
 
 CONV_KERNEL_INIT = 'freq' #{'time', 'freq'}
-print 'CONV_KERNEL_INIT', CONV_KERNEL_INIT
+print('CONV_KERNEL_INIT', CONV_KERNEL_INIT)
 
 MERGE_INIT = 'zero'
-print 'MERGE_INIT', MERGE_INIT
+print('MERGE_INIT', MERGE_INIT)
 
 ADAM_LR = 1e-4
 ADAM_B1 = 0.9
@@ -88,15 +88,15 @@ if select == 'hhar':
 DROP_FLAG = True
 INPUT_COMPLEX_NORM_FLAG = True
 CLIP_FLAG = False
-print 'ACT_DOMIAN', ACT_DOMIAN
-print 'DROP_FLAG', DROP_FLAG
-print 'INPUT_COMPLEX_NORM_FLAG', INPUT_COMPLEX_NORM_FLAG
-print 'FILTER_FLAG', FILTER_FLAG
-print 'FREQ_CONV_FLAG', FREQ_CONV_FLAG
-print 'CLIP_FLAG', CLIP_FLAG
-print 'ADAM_LR', ADAM_LR
-print 'ADAM_B1', ADAM_B1
-print 'ADAM_B2', ADAM_B2
+print('ACT_DOMIAN', ACT_DOMIAN)
+print('DROP_FLAG', DROP_FLAG)
+print('INPUT_COMPLEX_NORM_FLAG', INPUT_COMPLEX_NORM_FLAG)
+print('FILTER_FLAG', FILTER_FLAG)
+print('FREQ_CONV_FLAG', FREQ_CONV_FLAG)
+print('CLIP_FLAG', CLIP_FLAG)
+print('ADAM_LR', ADAM_LR)
+print('ADAM_B1', ADAM_B1)
+print('ADAM_B2', ADAM_B2)
 
 metaDict = {'hhar':[13544, 1765],
 			'wifi':[11100, 900]}
@@ -108,18 +108,18 @@ TOTAL_ITER_NUM = 10000000
 CLIP_VAL = 0.3
 
 if CLIP_FLAG:
-	print 'CLIP_VAL', CLIP_VAL
+	print('CLIP_VAL', CLIP_VAL)
 
 def complex_glorot_uniform(c_in, c_out_total, fft_list, fft_n, use_bias=True, name='complex_mat'):
 	with tf.variable_scope(name):
-		c_out = int(c_out_total)/len(fft_list)
+		c_out = int(c_out_total/len(fft_list))
 
 		if FILTER_INIT == 'real':
 			kernel = tf.get_variable('kernel', shape = [1, 1, c_in*c_out, fft_n],
 							initializer=tf.contrib.layers.xavier_initializer())
 			kernel_complex_org = tf.fft(tf.complex(kernel, 0.*kernel))
 			kernel_complex_org = tf.transpose(kernel_complex_org, [0, 1, 3, 2])
-			kernel_complex_org = kernel_complex_org[:,:,:int(fft_n)/2+1,:]
+			kernel_complex_org = kernel_complex_org[:,:,:int(int(fft_n)/2+1),:]
 		elif FILTER_INIT == 'complex':
 			kernel_r = tf.get_variable('kernel_real', shape = [1, 1, fft_n/2+1, c_in*c_out],
 								initializer=tf.contrib.layers.xavier_initializer())
@@ -250,7 +250,7 @@ def zero_interp(in_patch, ratio, seg_num, in_fft_n, out_fft_n, f_dim):
 	in_patch_zero = tf.tile(tf.zeros_like(in_patch),
 						[1, 1, 1, ratio-1, 1])
 	in_patch = tf.reshape(tf.concat([in_patch, in_patch_zero], 3), 
-				[BATCH_SIZE, seg_num, in_fft_n*ratio, f_dim])
+				[BATCH_SIZE, int(seg_num), int(in_fft_n*ratio), int(f_dim)])
 	return in_patch[:,:,:out_fft_n,:]
 
 def complex_merge(merge_ratio, name='time_merge'):
@@ -318,7 +318,7 @@ def STFLayer(inputs, fft_list, f_step_list, kenel_len_list, dilation_len_list, c
 
 		patch_fft_list = []
 		patch_mask_list = []
-		for idx in xrange(len(fft_n_list)):
+		for idx in range(len(fft_n_list)):
 			patch_fft_list.append(0.)
 			patch_mask_list.append([])
 
@@ -348,9 +348,9 @@ def STFLayer(inputs, fft_list, f_step_list, kenel_len_list, dilation_len_list, c
 						patch_mask = patch_mask - exist_mask
 					patch_fft_list[fft_idx2] = patch_fft_list[fft_idx2] + patch_mask*patch_fft
 				else:
-					time_ratio = tar_fft_n/fft_n
+					time_ratio = int(tar_fft_n/fft_n)
 					patch_fft_mod = tf.reshape(patch_fft, 
-						[BATCH_SIZE, ser_size/tar_fft_n, time_ratio, int(fft_n/2)+1, c_in])
+						[BATCH_SIZE, int(ser_size/tar_fft_n), time_ratio, int(fft_n/2)+1, c_in])
 					
 					patch_fft_mod = tf.transpose(patch_fft_mod, [0, 1, 3, 4, 2])
 
@@ -425,7 +425,7 @@ def STFLayer(inputs, fft_list, f_step_list, kenel_len_list, dilation_len_list, c
 			if FILTER_FLAG:
 				patch_kernel = patch_kernel_dict[fft_n]
 				patch_fft = tf.complex(patch_fft_r, patch_fft_i)
-				patch_fft = tf.tile(tf.expand_dims(patch_fft, 4), [1, 1, 1, 1, c_out/FFT_L_SIZE])
+				patch_fft = tf.tile(tf.expand_dims(patch_fft, 4), [1, 1, 1, 1, int(c_out/FFT_L_SIZE)])
 				patch_fft_out = patch_fft*patch_kernel
 				patch_fft_out = tf.reduce_sum(patch_fft_out, 3)
 				patch_out_r = tf.real(patch_fft_out)
@@ -544,7 +544,7 @@ t_vars = tf.trainable_variables()
 
 regularizers = 0.
 for var in t_vars:
-	print var.name
+	print(var.name)
 	if 'angle' in var.name:
 		continue
 	regularizers += tf.nn.l2_loss(var)
@@ -572,19 +572,20 @@ with tf.Session() as sess:
 	coord = tf.train.Coordinator()
 	threads = tf.train.start_queue_runners(coord=coord)
 
-	for iteration in xrange(TOTAL_ITER_NUM):
+	for iteration in range(TOTAL_ITER_NUM):
 		_, lossV, _trainY, _predict = sess.run([discOptimizer, loss, batch_label, predict])
 		_label = np.argmax(_trainY, axis=1)
 		_accuracy = np.mean(_label == _predict)
-		plot.plot('train cross entropy', lossV)
-		plot.plot('train accuracy', _accuracy)
+		# plot.plot('train cross entropy', lossV)
+		# plot.plot('train accuracy', _accuracy)
+		print("iteration = {}, train cross entropy = {}, train accuracy = {}".format(iteration, lossV, _accuracy))
 
 		if iteration % 50 == 49:
 			dev_accuracy = []
 			dev_cross_entropy = []
 			total_label = []
 			total_predt = []
-			for eval_idx in xrange(EVAL_ITER_NUM):
+			for eval_idx in range(EVAL_ITER_NUM):
 				eval_loss_v, _trainY, _predict = sess.run([loss, batch_eval_label, predict_eval])
 				_label = np.argmax(_trainY, axis=1)
 				_accuracy = np.mean(_label == _predict)
@@ -592,13 +593,14 @@ with tf.Session() as sess:
 				total_predt += _predict.tolist()
 				dev_accuracy.append(_accuracy)
 				dev_cross_entropy.append(eval_loss_v)
-			plot.plot('dev accuracy', np.mean(dev_accuracy))
-			plot.plot('dev cross entropy', np.mean(dev_cross_entropy))
-			plot.plot('dev macro f1', f1_score(total_label, total_predt, average='macro'))
+			# plot.plot('dev accuracy', np.mean(dev_accuracy))
+			# plot.plot('dev cross entropy', np.mean(dev_cross_entropy))
+			# plot.plot('dev macro f1', f1_score(total_label, total_predt, average='macro'))
+			print("testing accuracy = {}, testing cross entropy = {}, testing macro f1 = {}".format(
+				np.mean(dev_accuracy), np.mean(dev_cross_entropy)), f1_score(total_label, total_predt, average='macro'))
 
+		# if (iteration < 5) or (iteration % 50 == 49):
+		# 	plot.flush()
 
-		if (iteration < 5) or (iteration % 50 == 49):
-			plot.flush()
-
-		plot.tick()
+		# plot.tick()
 

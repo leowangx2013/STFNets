@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 import collections
 import time
-import cPickle as pickle
+import pickle
 import sys
 
 _since_beginning = collections.defaultdict(lambda: {})
@@ -23,7 +23,7 @@ def flush():
 	prints = []
 
 	for name, vals in _since_last_flush.items():
-		prints.append("{}\t{}".format(name, np.mean(vals.values())))
+		prints.append("{} {}".format(name, np.mean(list(vals.values()))))
 		_since_beginning[name].update(vals)
 
 		x_vals = np.sort(_since_beginning[name].keys())
@@ -35,7 +35,7 @@ def flush():
 		plt.ylabel(name)
 		plt.savefig(name.replace(' ', '_')+'.jpg')
 
-	print "iter {}\t{}".format(_iter[0], "\t".join(prints))
+	print("iter {} {}".format(_iter[0], "\t".join(prints)))
 	_since_last_flush.clear()
 	sys.stdout.flush()
 
