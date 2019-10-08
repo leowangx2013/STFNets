@@ -10,6 +10,7 @@ import plot
 from tfrecord_stft_util import input_pipeline_har
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
+# os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 
 layers = tf.contrib.layers 
 
@@ -29,10 +30,10 @@ GEN_C_OUT = 64 #72
 KEEP_PROB = 0.8
 
 
-select = 'hhar' # {'hhar', 'wifi'}
+select = 'speech' # {'hhar', 'wifi'}
 if len(sys.argv) > 1:
 	select = sys.argv[1]
-if select != 'wifi' and select != 'hhar':
+if select != 'wifi' and select != 'hhar' and select != 'speech':
 	print('select wifi or hhar')
 	sys.exit("select wifi or hhar")
 print('select', select)
@@ -47,6 +48,11 @@ if select == 'hhar':
 	SENSOR_AXIS = 3
 	SENSOR_NUM = 2
 	OUT_DIM = 6
+if select == 'speech':
+	SERIES_SIZE = 512
+	SENSOR_AXIS = 3
+	SENSOR_NUM = 2
+	OUT_DIM = 10
 
 print('GEN_FFT_N', GEN_FFT_N)
 print('GEN_FFT_N2', GEN_FFT_N2)
@@ -78,7 +84,7 @@ if select == 'wifi':
 	ACT_DOMIAN = 'freq'
 	FILTER_FLAG = False
 	FREQ_CONV_FLAG = True
-if select == 'hhar':
+if select == 'hhar' or select == 'speech':
 	ACT_DOMIAN = 'time'
 	FILTER_FLAG = True
 	FREQ_CONV_FLAG = False
@@ -99,7 +105,8 @@ print('ADAM_B1', ADAM_B1)
 print('ADAM_B2', ADAM_B2)
 
 metaDict = {'hhar':[13544, 1765],
-			'wifi':[11100, 900]}
+			'wifi':[11100, 900],
+			'speech':[1604, 401]}
 TRAIN_SIZE = metaDict[select.split('_')[-1]][0]
 EVAL_DATA_SIZE = metaDict[select.split('_')[-1]][1]
 EVAL_ITER_NUM = int(math.ceil(EVAL_DATA_SIZE / BATCH_SIZE))
@@ -192,7 +199,7 @@ def spectral_filter_gen(c_in, c_out_total, basic_len, len_list, use_bias, name='
 				kernel_exp_i = tf.image.resize_bilinear(kernel_i, 
 								[filter_len, c_in], align_corners=True)
 				kernel_dict[filter_len] = [kernel_exp_r, kernel_exp_i]
-		if use_bias:
+		if use_bias: 
 			bias_complex_r = tf.get_variable('bias_real', shape=[c_out], 
 										initializer=tf.zeros_initializer())
 			bias_complex_i = tf.get_variable('bias_imag', shape=[c_out], 
@@ -526,7 +533,10 @@ def STFNet(inputs, train, reuse=False, name='STFNet'):
 
 global_step = tf.Variable(0, trainable=False)
 
+# def input_pipeline_har(tfrec_path, batch_size, wide, feature_dim, out_dim, shuffle_sample=True, num_epochs=None):
 batch_feature, batch_label = input_pipeline_har(os.path.join(select, 'train.tfrecord'), BATCH_SIZE, SERIES_SIZE, SENSOR_AXIS*SENSOR_NUM, OUT_DIM)
+print("batch_feature.shape = {}, batch_label.shape = {}".format(batch_feature.get_shape().as_list(),
+	batch_label.get_shape().as_list()))
 batch_eval_feature, batch_eval_label = input_pipeline_har(os.path.join(select, 'eval.tfrecord'), BATCH_SIZE, SERIES_SIZE, SENSOR_AXIS*SENSOR_NUM, OUT_DIM, shuffle_sample=False)
 
 logits = STFNet(batch_feature, True, name='STFNet')
@@ -596,9 +606,10 @@ with tf.Session() as sess:
 			# plot.plot('dev accuracy', np.mean(dev_accuracy))
 			# plot.plot('dev cross entropy', np.mean(dev_cross_entropy))
 			# plot.plot('dev macro f1', f1_score(total_label, total_predt, average='macro'))
-			print("testing accuracy = {}, testing cross entropy = {}, testing macro f1 = {}".format(
-				np.mean(dev_accuracy), np.mean(dev_cross_entropy)), f1_score(total_label, total_predt, average='macro'))
-
+			# print("testing accuracy = {}, testing cross entropy = {}, testing macro f1 = {}".format(
+			# 	np.mean(dev_accuracy), np.mean(dev_cross_entropy)), f1_score(total_label, total_predt, average='macro'))
+			print("testing accuracy = {}, testing cross entropy = {}".format(
+				np.mean(dev_accuracy), np.mean(dev_cross_entropy)))
 		# if (iteration < 5) or (iteration % 50 == 49):
 		# 	plot.flush()
 
